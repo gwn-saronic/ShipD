@@ -7,7 +7,7 @@ Created on Tue Jun 28 10:18:02 2022
 import sys
 
 
-from HullParameterization import Hull_Parameterization as HP
+from shipd.HullParameterization import Hull_Parameterization as HP
 
 import numpy as np
 

@@ -1,6 +1,6 @@
 # This file contains all of the functions to calculate the MaxBox Metric for the ship Hulls
 
-from HullParameterization import Hull_Parameterization as HP
+from shipd.HullParameterization import Hull_Parameterization as HP
 
 import numpy as np
 from pymoo.optimize import minimize
