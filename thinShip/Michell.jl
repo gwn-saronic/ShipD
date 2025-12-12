@@ -11,73 +11,10 @@
 
 """
 
-using Plots;
 
 const GRAV = 9.807 #[m/s^2]
 const ν = 1.189e-6 # [m^2/s] saltwater 15C
 
-function testproblem(LWL, B, T, C, Uinf)
-
-    ϱ = 1000 # [kg/m^3]
-    # ************************************************
-    #     Make mesh
-    # ************************************************
-    nx = 11
-    nz = 4
-    Nangle = 300
-    x = LinRange(0, LWL, nx)
-    z = LinRange(0, -T, nz)
-
-    function analytic_hull(x, z)
-
-        offsets = B / 2 * sin(π * C * x / LWL) * cos(π * z / (2 * T))
-        return offsets
-    end
-
-    meshgrid = analytic_hull.(x, z') # (nx, nz)
-
-
-    p1 = plot(x, meshgrid[:, 1], z[1] * ones(length(x)), aspect_ratio=1, linecolor=:black)
-    plot!(x, -meshgrid[:, 1], z[1] * ones(length(x)), aspect_ratio=1, linecolor=:black)
-    for (iwl, zi) in enumerate(z[2:end])
-        plot!(x, meshgrid[:, iwl], zi * ones(length(x)), aspect_ratio=1, linecolor=:black)
-        plot!(x, -meshgrid[:, iwl], zi * ones(length(x)), aspect_ratio=1, linecolor=:black)
-    end
-    savefig(p1, "plot.png")
-    # return meshgrid
-
-    # ************************************************
-    #     Solve wave resistance
-    # ************************************************
-    Rw, Aθ = solve_michell(meshgrid, Uinf, x, z, ϱ, Nangle)
-
-    # ************************************************
-    #     Wave pattern
-    # ************************************************
-    Nx = 200
-    Ny = 200
-    xLim = 2π * Uinf^2 / GRAV * 3 # plot at least 3 transverse waves
-    yLim = xLim / 2
-    xRange = LinRange(0.0, xLim, Nx)
-    yRange = LinRange(-yLim, yLim, Ny)
-    ζ = compute_wavepattern(Aθ, Uinf, xRange, yRange)
-
-    xMesh = xRange' .* ones(Ny)
-    yMesh = ones(Nx)' .* yRange
-
-    println(size(xMesh), size(yMesh), size(ζ'))
-    p2 = contourf(xRange, yRange, real(ζ)', aspect_ratio=:equal, seriescolor=:coolwarm, levels=10)
-    savefig("wavepattern.png")
-
-    # ************************************************
-    #     Form drag
-    # ************************************************
-    WSA = 100 # dummy val
-    Rform = compute_formdrag(LWL, ϱ, Uinf, WSA)
-
-
-    return Rform, Rw, Aθ
-end
 
 
 function solve_michell(offsets, Uinf, xpos, zpos, ϱ, Nint)
@@ -85,7 +22,7 @@ function solve_michell(offsets, Uinf, xpos, zpos, ϱ, Nint)
 
     The free wave spectrum is:
 
-    A(θ) = 2/π (g/U^2) sec^3(θ) ∬ ∂ζ/∂x e^(g/U^2) sec^2(θ)(z - i x cos(θ)) dx dz
+    A(θ) = 2/π ( g / U² ) sec³(θ) ∬ ∂ζ/∂x e^(g/U^2) sec^2(θ)(z - i x cos(θ)) dx dz
 
     Wave resistance from this is:
 
