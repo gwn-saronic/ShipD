@@ -1,6 +1,6 @@
 """ShipD"""
 
-__version__ = "0.0.0"
+__version__ = "0.0.1"
 
 from .HullParameterization import Hull_Parameterization
 from .ModifiedMichellCw import ModMichell

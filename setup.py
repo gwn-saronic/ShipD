@@ -3,8 +3,8 @@ import re
 import os
 
 __version__ = re.findall(
-        r"""__version__ = ["']+([0-9\.]*)["']+""",
-        open("shipd/__init__.py").read(),
+    r"""__version__ = ["']+([0-9\.]*)["']+""",
+    open("shipd/__init__.py").read(),
 )[0]
 
 this_directory = os.path.abspath(os.path.dirname(__file__))

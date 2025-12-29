@@ -1,9 +1,8 @@
 # --- Python ---
 """
 @File          :   setup_juliapkg.py
-@Date created  :   2025/02/05
-@Last modified :   2025/05/22
-@Author        :   Galen Ng
+@Last modified :   2925-12-12
+@Author        :   Galen W. Ng
 @Desc          :   Simple file to parse the Project.toml file and update the PythonCall Julia package manager file
 """
 

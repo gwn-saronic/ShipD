@@ -38,8 +38,10 @@ function solve_michell(offsets, Uinf, xpos, zpos, ϱ, Nint)
     Inputs
     ------
     offsets - Y[xidx, zidx]
-    xpos - x positions of the offsets
-    zpos - Does not work with uneven spacing
+    xpos - 
+        x positions of the offsets
+    zpos - 
+        Does not work with uneven spacing
     Nint - 
         2000 gives pretty low errors
     """
@@ -49,7 +51,15 @@ function solve_michell(offsets, Uinf, xpos, zpos, ϱ, Nint)
     dx = xpos[2] - xpos[1]
 
     if size(offsets, 1) % 2 == 0
-        throw(ErrorException("Need even idx"))
+        throw(
+            ErrorException("Need odd number of x stations for Filon integration. You gave $(size(offsets, 1))")
+            )
+    end
+
+    if size(offsets,1) != length(xpos)
+        throw(
+            ErrorException("Size of offsets in x direction $(size(offsets, 1)) does not match length of xpos $(length(xpos))")
+            )
     end
 
     L = xpos[end] - xpos[1]
@@ -157,6 +167,9 @@ function solve_michell(offsets, Uinf, xpos, zpos, ϱ, Nint)
     # Trapezoidal integration
     secondTerm = k .^ 2 .* (P .^ 2 + Q .^ 2) + 2 * k .* asub .* (Q .* PT - P .* QT) + asub .^ 2 .* (PT .^ 2 + QT .^ 2)
     Rw = Coef * k .^ 2 ./ asub .^ 3 .* secondTerm
+    # Replace Nans with zeros
+    Rw[isnan.(Rw)] .= 0.0
+
     RwInt = 0.0
     for ii in 1:Nint-1
         dθ = θm[ii+1] - θm[ii]

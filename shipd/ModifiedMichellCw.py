@@ -42,6 +42,7 @@ def ModMichell(Y, U, X, Z, RHO, N):
     if Nx % 2 == 0:
         print("Nx must be odd.")  # required for x Filon algorithm
         return -1
+
     # ------ integration variables ---------
     dz = Z[1] - Z[0]
 

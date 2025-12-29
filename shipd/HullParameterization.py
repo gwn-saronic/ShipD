@@ -67,19 +67,20 @@ class Hull_Parameterization:
         """
 
         self.LOA = inputs[0]
-        self.Lb = inputs[1] * self.LOA
-        self.Ls = inputs[2] * self.LOA
+        self.Lb = inputs[1] * self.LOA # bow taper length
+        self.Ls = inputs[2] * self.LOA # stern taper length
         self.Bd = inputs[3] / 2.0 * self.LOA  # half breadth
-        self.Dd = inputs[4] * self.LOA
+        self.Dd = inputs[4] * self.LOA # depth at deck
         self.Bs = inputs[5] * self.Bd  # half breadth, fraction of Bd
-        self.WL = inputs[6] * self.Dd
-        self.Bc = inputs[7] / 2.0 * self.LOA  # half breadth
-        self.Beta = inputs[8]
-        self.Rc = inputs[9] * self.Bc
-        self.Rk = inputs[10] * self.Dd
-        self.BOW = np.zeros((3,))
-        self.BOW[0] = inputs[11] * 0.5 * self.Lb / self.Dd**2.0
-        self.BOW[1] = inputs[12] * 0.5 * self.Lb / self.Dd
+        self.WL = inputs[6] * self.Dd # waterline depth (draft)
+        self.Bc = inputs[7] / 2.0 * self.LOA  # half breadth at chine
+        self.Beta = inputs[8] # deadrise angle in degrees
+        self.Rc = inputs[9] * self.Bc # chine radius
+        self.Rk = inputs[10] * self.Dd # keel radius
+        # Bow form
+        self.BOW = np.zeros((3,)) 
+        self.BOW[0] = inputs[11] * 0.5 * self.Lb / self.Dd**2.0 # 
+        self.BOW[1] = inputs[12] * 0.5 * self.Lb / self.Dd #
         self.BK = np.zeros((2,))
         self.BK[1] = inputs[13] * self.Dd  # BK_z is an input - BK_x is solved for
         self.Kappa_BOW = inputs[14]
@@ -90,6 +91,7 @@ class Hull_Parameterization:
         self.DRIFT[0] = inputs[17] * 60.0 / self.Dd**2.0
         self.DRIFT[1] = inputs[18] * 60.0 / self.Dd
         self.DRIFT[2] = inputs[19]
+        # Stern form
         self.bit_EP_S = inputs[20]
         self.bit_EP_T = inputs[21]
         self.TRANS = np.zeros((2,))
@@ -103,10 +105,11 @@ class Hull_Parameterization:
         # self.RY_STERN = np.array(inputs[25:27])
         # self.RX_STERN = np.array(inputs[27:29])
         self.Beta_trans = inputs[27]
-        self.Bc_trans = inputs[28] / 2.0 * self.LOA  # half breadth
+        self.Bc_trans = inputs[28] / 2.0 * self.LOA  # half breadth of chine at transom
         self.Rc_trans = inputs[29] * self.Bc_trans
         self.Rk_trans = inputs[30] * self.Dd * (1 - self.SK[1])
         # self.CONVERGE = np.array(inputs[33:36])
+        # Bulb Forms
         self.bit_BB = inputs[31]
         self.bit_SB = inputs[32]
         self.Lbb = inputs[33]
@@ -152,7 +155,7 @@ class Hull_Parameterization:
         3) Bd  -> Beam at the top deck of the vessel in [m] or fraction of LOA
         4) Dd  -> Depth of the vessel at the deck in [m] or fraction of LOA
         5) Bs  -> Beam at the stern in [m] or fraction of LOA
-        6) WL  -> Waterline depts in [m] or fraction of LOA
+        6) WL  -> Waterline depths in [m] or fraction of LOA
         
     Constraints / NOTES to ensure realistic sizing/ shape of a hull: 
         0) The length of the parallel mid body is equal to LOA-Lb-Ls = Lm
@@ -1117,7 +1120,7 @@ class Hull_Parameterization:
     The Bulb Forms are defined by the following inputs:
         0)  bit_BB   -> Bit that defines whether there is a bublous bow (1) or not (0)
         1)  bit_SB   -> Bit that defines whether there is a bublous stern (1) or not (0)
-        2)  Lbb      -> Length of the bulbous bow (BB) fwd the foward perpendicular as a fraction of LOA
+        2)  Lbb      -> Length of the bulbous bow (BB) fwd of the forward perpendicular as a fraction of LOA
         3)  Hbb      -> Height of widest part of the BB as a fraction of the WL
         4)  Bbb      -> max. Width of the BB at the FP as a fraction of Bd
         5)  Lbbm     -> A midpoint along the length of the BB as a fraction of Lbb -> represents the position of max beam of the BB
@@ -2251,7 +2254,12 @@ class Hull_Parameterization:
     """
 
     def Calc_VolumeProperties(self, NUM_WL=101, PointsPerWL=1000):
-        # This function generates a point cloud to be used for volumetric measurements an calls all of the evaluation measurements to be calculated.
+        """
+        This function generates a point cloud of the whole ship to be used for volumetric measurements an calls all of the evaluation measurements to be calculated. 
+
+        Returns:
+            Z (np.array): Array of waterline heights used for the calculations. From baseline (z=0) to deck
+        """
         Z = np.linspace(0.00001, self.Dd, num=NUM_WL)
 
         self.PCMeasurement = self.gen_pointCloud(
@@ -2371,7 +2379,9 @@ class Hull_Parameterization:
         self.I_WP = I
 
     def Calc_WettedSurface(self, Z):
-        # This function calcultes and summates the wetted surface between each draft line (Z[]and at the bottom of the hull, by estimating length along the surface
+        """
+        This function calcultes and summates the wetted surface between each draft line (Z[]and at the bottom of the hull, by estimating length along the surface
+        """
 
         ArcL = np.zeros((len(Z),))
         WSA = np.zeros((len(Z),))
