@@ -37,7 +37,7 @@ function __init__()
             STL_AVAILABLE[] = true
         end
     catch e
-        @warn "STLReader not available. STL file input will not work." exception=e
+        @warn "STLReader not available. STL file input will not work." exception = e
     end
 end
 
@@ -67,7 +67,7 @@ struct HydrostaticProperties
     lcf::Float64
     ixx::Float64 # wrong
     iyy::Float64 # wrong
-    wetted_surface::Float64 # wrong
+    wsa::Float64 # wrong
     waterline_length::Float64
 end
 
@@ -148,10 +148,10 @@ Calculate second moments of waterplane area (Ixx, Iyy).
 
 # Notes
 - Ixx: Second moment about longitudinal axis (transverse stability)
-- Iyy: Second moment about transverse axis (longitudinal stability)
+- IL: Second moment about transverse axis going through the LCF (longitudinal stability)
 - Both calculated about the centerline/amidships
 """
-function calculate_second_moments(x::Vector, y::Vector)
+function calculate_second_moments(x::Vector, y::Vector, waterplane_area::Number, LCF::Number)
     @assert length(x) == length(y) "x and y must have same length"
     @assert length(x) >= 2 "Need at least 2 points"
 
@@ -178,7 +178,14 @@ function calculate_second_moments(x::Vector, y::Vector)
     # Account for both sides (port and starboard)
     iyy *= 2.0
 
-    return (ixx, iyy)
+    iL = iyy - waterplane_area * LCF^2 # this is the transverse moment of inertia about LCF
+
+    # println("LCF:\t",LCF)
+    # println("Awp:\t",waterplane_area)
+    # println("iL:\t",iL)
+    # println("iyy:\t",iyy)
+
+    return (ixx, iL)
 end
 
 """
@@ -212,35 +219,41 @@ function calculate_waterline_length(x::Vector, y::Vector; threshold::Float64=1e-
 end
 
 """
-    calculate_wetted_perimeter(y::Vector, z::Vector)
+    calculate_waterline_arc_length(x::Vector, y::Vector)
 
-Calculate the wetted perimeter of a cross-section.
+Calculate the arc length along a waterline contour.
 
 # Arguments
-- `y::Vector`: Half-breadth offsets at different vertical positions
-- `z::Vector`: Vertical positions (depths)
+- `x::Vector`: Longitudinal positions along waterline
+- `y::Vector`: Half-breadth offsets at each x position
 
 # Returns
-- `Float64`: Wetted perimeter for one side
+- `Float64`: Arc length for one side of the hull
 
 # Notes
-Uses arc length calculation: L = ∫ √(1 + (dy/dz)²) dz
-Result should be multiplied by 2 for both sides plus keel length.
+Uses arc length calculation: L = ∫ √((dx)² + (dy)²)
+This calculates the arc length along the waterline in the x-y plane.
+Result should be multiplied by 2 for both sides, plus transom width if applicable.
 """
-function calculate_wetted_perimeter(y::Vector, z::Vector)
-    @assert length(y) == length(z) "y and z must have same length"
-    @assert length(y) >= 2 "Need at least 2 points"
+function calculate_waterline_arc_length(x::Vector, y::Vector)
+    @assert length(x) == length(y) "x and y must have same length"
+    @assert length(x) >= 2 "Need at least 2 points"
 
-    perimeter = 0.0
+    arc_length = 0.0
 
-    for i in 1:(length(z)-1)
+    for i in 1:(length(x)-1)
+        dx = x[i+1] - x[i]
         dy = y[i+1] - y[i]
-        dz = z[i+1] - z[i]
-        ds = sqrt(dy^2 + dz^2)
-        perimeter += ds
+        ds = √(dx^2 + dy^2)
+        arc_length += ds
     end
 
-    return perimeter
+    # Add last segment to close the waterline if needed
+    if y[end] > 1e-6  # Only close if last point is significant
+        arc_length += y[end]
+    end
+
+    return arc_length
 end
 
 """
@@ -273,7 +286,7 @@ function calculate_hydrostatics_at_draft(x::Vector, y_offsets::Matrix, z::Vector
     wl_length = calculate_waterline_length(x, y_wl)
 
     # For volume, integrate area over depth (set to 0 for single draft)
-    # For wetted surface, integrate perimeter over depth (set to 0 for single draft)
+    # For wetted surface, integrate arc length over depth (set to 0 for single draft)
     # These require multiple drafts - see calculate_hydrostatics
 
     return HydrostaticProperties(
@@ -324,19 +337,14 @@ function calculate_hydrostatics(x::Vector, y_offsets::Matrix, z::Vector)
     # Arrays to store intermediate values for volume integration
     areas_wp = zeros(num_drafts)
     lcfs = zeros(num_drafts)
-    perimeters = zeros(length(x))  # Perimeter at each x-station
+    arc_lengths = zeros(num_drafts)  # Arc length along each waterline
 
     # Calculate waterplane properties at each draft
     for i in 1:num_drafts
         y_wl = y_offsets[:, i]
         areas_wp[i] = calculate_waterplane_area(x, y_wl)
         lcfs[i] = calculate_waterplane_center(x, y_wl)
-    end
-
-    # Calculate wetted perimeters at each x-station
-    for i in 1:length(x)
-        y_section = y_offsets[i, :]
-        perimeters[i] = calculate_wetted_perimeter(y_section, z)
+        arc_lengths[i] = calculate_waterline_arc_length(x, y_wl)
     end
 
     # Integrate to get volumes, centers of buoyancy, and wetted surface
@@ -344,6 +352,10 @@ function calculate_hydrostatics(x::Vector, y_offsets::Matrix, z::Vector)
     lcbs = zeros(num_drafts)
     vcbs = zeros(num_drafts)
     wetted_surfaces = zeros(num_drafts)
+
+    # Initialize wetted surface at bottom of hull (approximation)
+    # At the keel/bottom, wetted surface is approximately 2x the waterplane area at that level
+    wetted_surfaces[1] = 2.0 * areas_wp[1]
 
     for i in 2:num_drafts
         # Volume: trapezoidal integration of waterplane areas
@@ -373,29 +385,20 @@ function calculate_hydrostatics(x::Vector, y_offsets::Matrix, z::Vector)
             vcbs[i] = moment_z / volumes[i]
         end
 
-        # Wetted surface: integrate perimeter over x and z
-        # For each station, integrate perimeter over depth
-        wsa = 0.0
-        for k in 1:(length(x)-1)
-            dx = x[k+1] - x[k]
-            # Average perimeter between two stations, both sides
-            avg_perim = 0.5 * (perimeters[k] + perimeters[k+1])
-            wsa += 2.0 * avg_perim * dx  # Factor of 2 for both sides
+        # Wetted surface: integrate arc length over draft (z direction)
+        # Using trapezoidal rule: WSA[i] = WSA[i-1] + (ArcL[i] + ArcL[i-1]) * dz
+        # Factor of 2 accounts for both port and starboard sides
+        avg_arc = 0.5 * (arc_lengths[i] + arc_lengths[i-1])
 
-            # Add bottom (keel) area
-            if i == num_drafts  # Only at full draft
-                # Keel width contribution
-                wsa += (y_offsets[k, 1] + y_offsets[k+1, 1]) * dx
-            end
-        end
-        wetted_surfaces[i] = wsa
+        # Total wetted perimeter = 2 * arc_length (both sides) + transom_width
+        wetted_surfaces[i] = wetted_surfaces[i-1] + (2.0 * avg_arc * dz)
     end
 
     # Build results array
     for i in 1:num_drafts
         y_wl = y_offsets[:, i]
-        ixx, iyy = calculate_second_moments(x, y_wl)
-        wl_length = calculate_waterline_length(x, y_wl)
+        ixx, iyy = calculate_second_moments(x, y_wl, areas_wp[i], lcfs[i])
+        wl_length = calculate_waterline_length(x, y_wl) # correct
         lcf = lcfs[i]
 
         results[i] = HydrostaticProperties(
@@ -545,10 +548,10 @@ results = calculate_hydrostatics(x, y, z)
 ```
 """
 function calculate_hydrostatics_from_file(filename::String;
-                                         input_type::Symbol=:auto,
-                                         n_stations::Int=51,
-                                         n_waterlines::Int=11,
-                                         draft::Union{Nothing,Float64}=nothing)
+    input_type::Symbol=:auto,
+    n_stations::Int=51,
+    n_waterlines::Int=11,
+    draft::Union{Nothing,Float64}=nothing)
     # Auto-detect input type
     if input_type == :auto
         ext = lowercase(splitext(filename)[2])
@@ -562,9 +565,9 @@ function calculate_hydrostatics_from_file(filename::String;
     # Process based on input type
     if input_type == :stl
         return calculate_hydrostatics_from_stl(filename,
-                                               n_stations=n_stations,
-                                               n_waterlines=n_waterlines,
-                                               draft=draft)
+            n_stations=n_stations,
+            n_waterlines=n_waterlines,
+            draft=draft)
     else
         error("Unsupported input type: $input_type")
     end
@@ -590,18 +593,18 @@ results = calculate_hydrostatics_from_stl("hull.stl", n_stations=51, n_waterline
 ```
 """
 function calculate_hydrostatics_from_stl(filename::String;
-                                        n_stations::Int=51,
-                                        n_waterlines::Int=11,
-                                        draft::Union{Nothing,Float64}=nothing)
+    n_stations::Int=51,
+    n_waterlines::Int=11,
+    draft::Union{Nothing,Float64}=nothing)
     if !STL_AVAILABLE[]
         error("STL support not available. Make sure STLReader.jl is in the same directory as Hydrostatics.jl")
     end
 
     # Extract offsets from STL
     x, y_offsets, z = STLReader.extract_offsets_from_stl(filename,
-                                                         n_stations=n_stations,
-                                                         n_waterlines=n_waterlines,
-                                                         draft=draft)
+        n_stations=n_stations,
+        n_waterlines=n_waterlines,
+        draft=draft)
 
     # Calculate hydrostatics
     return calculate_hydrostatics(x, y_offsets, z)
@@ -635,9 +638,9 @@ end
 
 function calculate_hydrostatics(input::STLInput)
     return calculate_hydrostatics_from_stl(input.filename,
-                                          n_stations=input.n_stations,
-                                          n_waterlines=input.n_waterlines,
-                                          draft=input.draft)
+        n_stations=input.n_stations,
+        n_waterlines=input.n_waterlines,
+        draft=input.draft)
 end
 
 end # module

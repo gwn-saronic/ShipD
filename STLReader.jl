@@ -332,7 +332,7 @@ Extract offset table from STL file for hydrostatic calculations.
 - `filename::String`: Path to STL file
 - `n_stations::Int`: Number of longitudinal stations
 - `n_waterlines::Int`: Number of vertical waterlines
-- `draft::Union{Nothing,Float64}`: Draft to use (if nothing, uses full depth of mesh)
+- `zstop::Union{Nothing,Float64}`: Draft to use (if nothing, uses full depth of mesh)
 
 # Returns
 - `(x, y_offsets, z)`: Tuple of offset data arrays
@@ -348,7 +348,7 @@ x, y_offsets, z = extract_offsets_from_stl("hull.stl", n_stations=51, n_waterlin
 function extract_offsets_from_stl(filename::String;
                                  n_stations::Int=51,
                                  n_waterlines::Int=11,
-                                 draft::Union{Nothing,Float64}=nothing)
+                                 zstop::Union{Nothing,Float64}=nothing)
     # Read STL file
     println("Reading STL file: $filename")
     mesh = read_stl(filename)
@@ -358,9 +358,10 @@ function extract_offsets_from_stl(filename::String;
     z_min = mesh.bounds[3, 1]
     z_max = mesh.bounds[3, 2]
 
-    if draft !== nothing
-        # Use specified draft
-        z_min = z_max - draft
+    if zstop !== nothing
+        # Use specified draft and shift z_max accordingly
+        z_max = zstop
+        # z_min = z_max - draft
     end
 
     println("  Vertical range: z = [$z_min, $z_max]")
