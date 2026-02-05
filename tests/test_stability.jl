@@ -218,7 +218,7 @@ using StabilityAnalysis
         )
 
         println("\n=== ARV Stability at Draft $(hydro.draft) m ===")
-        println("Property         | Computed    | Reference   | Diff %")
+        println("Property         | Computed    | Orca 1.28m  | Diff %")
         println("-----------------|-------------|-------------|-------")
 
         function print_comparison(name, computed, reference, tolerance=0.10)

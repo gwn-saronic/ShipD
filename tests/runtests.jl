@@ -7,11 +7,6 @@ Runs all test suites for Hydrostatics and Stability analysis
 
 using Test
 
-println("="^70)
-println("ShipD Julia Test Suite")
-println("="^70)
-println()
-
 # Track overall results
 test_files = [
     "test_hydrostatics.jl",

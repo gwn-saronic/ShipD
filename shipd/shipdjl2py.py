@@ -72,7 +72,7 @@ class ShipDJL2PY:
         """
         Compute hydrostatic properties from the offsets
         """
-
+        # TODO:
         # ---------------------------
         #   Run simple hydrostatics command first
         # ---------------------------
@@ -87,6 +87,10 @@ class ShipDJL2PY:
 
         # ---------------------------
         #   Do static stability calcs
+        # ---------------------------
+
+        # ---------------------------
+        #   GZ curves
         # ---------------------------
 
 # Test code
