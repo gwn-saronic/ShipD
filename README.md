@@ -3,62 +3,6 @@
 Ship-D is a Dataset of 30,000 ship hulls for machine learning applications to ship design.
 Here is a link to the Dataset, Sample Code, and Documentation: https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/MMGAUS
 
-## Julia Hydrostatics & Analysis Tools
-
-This repository now includes high-performance Julia modules for ship hull analysis:
-
-- **Hydrostatics.jl** - Calculate displaced volume, waterplane area, centers of buoyancy/flotation, second moments, wetted surface area
-- **StabilityAnalysis.jl** - Metacentric heights (GM), righting arms (GZ), stability curves
-- **FormCoefficients.jl** - Block coefficient (Cb), prismatic coefficient (Cp), waterplane coefficient (Cwp), and more
-- **STLReader.jl** - Read STL files (ASCII and binary formats) and extract hull offsets
-
-### Quick Start
-
-```julia
-# Load module
-include("Hydrostatics.jl")
-using .Hydrostatics
-
-# Calculate from STL file
-results = calculate_hydrostatics_from_file("hull.stl")
-
-# Access properties at design draft
-props = results[end]
-println("Volume: $(props.volume) m³")
-println("LCB: $(props.lcb) m")
-println("Waterplane area: $(props.waterplane_area) m²")
-```
-
-### Documentation
-
-- [Quick Start Guide](examples/QUICK_START_HYDROSTATICS.md) - Get started quickly with examples
-- [Complete Features](docs/COMPLETE_FEATURES.md) - Full list of implemented features
-- [API Documentation](docs/HYDROSTATICS_README.md) - Detailed API reference
-- [Input Methods](docs/INPUT_METHODS.md) - Working with different input formats
-- [STL Support](docs/STL_SUPPORT.md) - Using STL files for analysis
-- [Stability Analysis](docs/STABILITY_AND_COEFFICIENTS.md) - Stability calculations and form coefficients
-
-### Running Examples
-
-```bash
-# Standalone hydrostatics demo
-julia examples/hydrostatics_demo.jl
-
-# Stability analysis demo
-julia examples/stability_analysis_demo.jl
-
-# STL to stability analysis
-julia examples/stl_to_stability.jl
-```
-
-### Running Tests
-
-```bash
-julia tests/test_hydrostatics.jl
-julia tests/test_stability_features.jl
-julia tests/test_all_inputs.jl
-```
-
 ---
 
 ## Design Representation ## 
@@ -94,8 +38,8 @@ The dataset containts twelve measures of each hull's geometry. Many are measured
 1)  Displaced Volume
 2)  Surface Area
 3)  Waterplane Area
-4)  Area Moments of Intertia in Roll Direction ($I_{xx}$)
-5)  Area Moments of Intertia in Pitch Direction ($I_{yy}$)
+4)  Area Moments of Inertia in Roll Direction ($I_{xx}$)
+5)  Area Moments of Inertia in Pitch Direction ($I_{yy}$)
 6)  Longitudinal Center of Flotation (Center of Waterplane Area)
 7)  Longitudinal Center of Buoyancy (Center of Displaced Volume)
 8)  Vertical Center of Buoyancy (Center of Displaced Volume)

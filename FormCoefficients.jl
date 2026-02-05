@@ -81,13 +81,13 @@ Typical values:
 - High-speed craft: 0.30-0.45
 """
 function calculate_block_coefficient(volume::Float64,
-                                    loa::Float64,
+                                    lwl::Float64,
                                     beam::Float64,
                                     draft::Float64)
-    if loa <= 0 || beam <= 0 || draft <= 0
+    if lwl <= 0 || beam <= 0 || draft <= 0
         return 0.0
     end
-    return volume / (loa * beam * draft)
+    return volume / (lwl * beam * draft)
 end
 
 """
@@ -111,11 +111,11 @@ Typical values:
 """
 function calculate_prismatic_coefficient(volume::Float64,
                                         midship_area::Float64,
-                                        loa::Float64)
-    if midship_area <= 0 || loa <= 0
+                                        lwl::Float64)
+    if midship_area <= 0 || lwl <= 0
         return 0.0
     end
-    return volume / (midship_area * loa)
+    return volume / (midship_area * lwl)
 end
 
 """
