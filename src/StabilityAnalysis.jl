@@ -27,7 +27,6 @@ using LinearAlgebra
 Structure containing metacentric stability properties.
 
 # Fields
-- `draft::Float64`: Draft at which properties are calculated
 - `volume::Float64`: Displaced volume
 - `kb::Float64`: Height of center of buoyancy above keel
 - `bm_t::Float64`: Transverse metacentric radius
@@ -39,7 +38,6 @@ Structure containing metacentric stability properties.
 - `kg::Union{Nothing,Float64}`: Height of center of gravity above keel (if provided)
 """
 struct MetacentricProperties
-    draft::Float64
     volume::Float64
     kb::Float64
     bm_t::Float64
@@ -52,14 +50,14 @@ struct MetacentricProperties
 end
 
 """
-    calculate_metacentric_properties(volume, vcb, draft, ixx, iyy; kg=nothing)
+    calculate_metacentric_properties(volume, vcb, zkeel, ixx, iyy; kg=nothing)
 
 Calculate metacentric properties from hydrostatic data.
 
 # Arguments
 - `volume::Float64`: Displaced volume (m³)
-- `vcb::Float64`: Vertical center of buoyancy from waterline (negative below)
-- `draft::Float64`: Draft
+- `vcb::Float64`: Vertical center of buoyancy (absolute z-coordinate)
+- `zkeel::Float64`: Keel z-coordinate (typically 0.0)
 - `ixx::Float64`: Second moment of waterplane area about longitudinal axis
 - `iyy::Float64`: Second moment of waterplane area about transverse axis
 - `kg::Union{Nothing,Float64}`: Height of center of gravity above keel (optional)
@@ -68,7 +66,7 @@ Calculate metacentric properties from hydrostatic data.
 - `MetacentricProperties`: Structure containing all metacentric properties
 
 # Notes
-- KB = Draft + VCB (VCB is negative below waterline)
+- KB = VCB - zkeel (height of center of buoyancy above keel)
 - BM_t = Ixx / Volume (transverse metacentric radius)
 - BM_l = Iyy / Volume (longitudinal metacentric radius)
 - KM = KB + BM
@@ -76,13 +74,12 @@ Calculate metacentric properties from hydrostatic data.
 """
 function calculate_metacentric_properties(volume::Float64,
                                          vcb::Float64,
-                                         draft::Float64,
+                                         zkeel::Float64,
                                          ixx::Float64,
                                          iyy::Float64;
                                          kg::Union{Nothing,Float64}=nothing)
     # KB: Height of center of buoyancy above keel
-    # VCB is from waterline (negative below), so KB = draft + VCB
-    kb = draft + vcb
+    kb = vcb - zkeel
 
     # BM: Metacentric radius
     # BM = I / Volume, where I is second moment of waterplane area
@@ -102,7 +99,7 @@ function calculate_metacentric_properties(volume::Float64,
     end
 
     return MetacentricProperties(
-        draft, volume, kb, bm_t, bm_l, km_t, km_l, gm_t, gm_l, kg
+        volume, kb, bm_t, bm_l, km_t, km_l, gm_t, gm_l, kg
     )
 end
 
