@@ -20,7 +20,7 @@ import juliacall
 
 jl = juliacall.newmodule("ShipD")
 
-jlPath = f"{Path(__file__).parent.parent}/thinShip/"
+jlPath = f"{Path(__file__).parent.parent}/src/"
 jl.include(f"{jlPath}/Michell.jl")
 
 
@@ -57,9 +57,9 @@ class ShipDJL2PY:
         B = np.max(offsets) * 2
         T = np.max(np.abs(zpos))
 
-        Dprof = jl.compute_formdrag(LWL, B, T, rho, Uinf, WSA, CB)
+        Dvisc = jl.compute_formdrag(LWL, B, T, rho, Uinf, WSA, CB)
 
-        HydroDrag = self.Dw + Dprof
+        HydroDrag = self.Dw + Dvisc
 
         return HydroDrag
     
@@ -68,6 +68,28 @@ class ShipDJL2PY:
         Take the free wave spectrum and compute the wave pattern for visualization
         """
 
+    def compute_hydrostatics(self, mass_properties):
+        """
+        Compute hydrostatic properties from the offsets
+        """
+
+        # ---------------------------
+        #   Run simple hydrostatics command first
+        # ---------------------------
+
+        # ---------------------------
+        #   Get form coefficients
+        # ---------------------------
+
+        # ---------------------------
+        #   Solve equilibrium
+        # ---------------------------
+
+        # ---------------------------
+        #   Do static stability calcs
+        # ---------------------------
+
+# Test code
 if __name__ == "__main__":
     Solver = ShipDJL2PY()
 

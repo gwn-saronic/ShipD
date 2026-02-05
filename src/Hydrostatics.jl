@@ -576,7 +576,7 @@ second_moments(props::HydrostaticProperties) = (props.ixx, props.iyy)
 
 Extract wetted surface area from HydrostaticProperties.
 """
-wetted_surface_area(props::HydrostaticProperties) = props.wetted_surface
+wetted_surface_area(props::HydrostaticProperties) = props.wsa
 
 """
     waterline_length(props::HydrostaticProperties)
