@@ -85,7 +85,10 @@ class ShipDJL2PY:
         """
         Take the free wave spectrum and compute the wave pattern for visualization
         """
-        jl.compute_wavepattern(self.FreeWaveSpectrum, Uinf, xRange, yRange)
+
+        zeta = jl.compute_wavepattern(self.FreeWaveSpectrum, Uinf, xRange, yRange)
+
+        return zeta
 
 
     def compute_hydrostatics(self, mass_properties):
