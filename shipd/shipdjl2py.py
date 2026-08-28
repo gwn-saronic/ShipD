@@ -62,11 +62,31 @@ class ShipDJL2PY:
         HydroDrag = self.Dw + Dvisc
 
         return HydroDrag
-    
-    def compute_wavepattern(self):
+
+    def compute_dragDerivative(self, offsets, Uinf, xpos, zpos, rho, Nint=1000, mode="RAD"):
+        """
+        Compute the gradient of drag wrt offsets
+        See `compute_drag()` for same explanation of inputs
+
+        Right now, it's only the wave drag derivative
+
+        Returns
+        -------
+        _type_
+            _description_
+        """
+
+        gradient = jl.compute_MichellDerivative(offsets, Uinf, xpos, zpos, rho, Nint, mode)
+
+        return gradient
+
+
+    def compute_wavepattern(self, Uinf, xRange, yRange):
         """
         Take the free wave spectrum and compute the wave pattern for visualization
         """
+        jl.compute_wavepattern(self.FreeWaveSpectrum, Uinf, xRange, yRange)
+
 
     def compute_hydrostatics(self, mass_properties):
         """
