@@ -270,6 +270,12 @@ function compute_wavepattern(AθHalf, Uinf, xRange, yRange)
     NintHalf = length(AθHalf)
     θmHalf = compute_michspace(NintHalf)
 
+    # The last node sits exactly at θ = π/2 where sec(θ) diverges, so the
+    # spectrum there is floating-point garbage that swamps the pattern.
+    # The drag integrand decays like 1/sec(θ) so solve_michell is unaffected
+    θmHalf = θmHalf[1:end-1]
+    AθHalf = AθHalf[1:end-1]
+
     θm = vcat(-reverse(θmHalf), θmHalf[2:end])
     Aθ = vcat(reverse(AθHalf), AθHalf[2:end])
     Nint = length(θm)
