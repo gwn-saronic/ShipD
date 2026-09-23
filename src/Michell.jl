@@ -16,7 +16,7 @@ using ReverseDiff, ForwardDiff, ChainRulesCore, FiniteDifferences
 const GRAV = 9.807 #[m/s^2]
 const ν = 1.189e-6 # [m^2/s] saltwater 15C
 
-const tape_cache = Dict{Tuple{Int},ReverseDiff.GradientTape}() # cache tapes based on input size
+const tape_cache = Dict{Any,ReverseDiff.GradientTape}() # cache tapes based on input size
 
 function solve_michell(offsets, Uinf, xpos, zpos, ϱ, Nint)
     """
@@ -191,17 +191,16 @@ function solve_waveDrag(vecoffsets, Uinf, xpos, zpos, ϱ, Nint)
     return Rw
 end
 
+"""
+Compute the Jacobian of the wave resistance with respect to the offsets
+"""
 function compute_MichellDerivative(offsets, Uinf, xpos, zpos, ϱ, Nint, mode="RAD")
-    """
-    Compute the Jacobian of the wave resistance with respect to the offsets
-    """
 
-    function get_or_make_tape(func, x₀)
-        key = (length(x₀),)
+    function get_or_make_tape(func, x₀, key)
         if haskey(tape_cache, key)
             return tape_cache[key]
         else
-            println("Compiling new tape for size ", key)
+            println("Compiling new tape for (n, Uinf, ϱ, Nint) = ", key[1:4])
             tComp = @time begin
                 tape = ReverseDiff.GradientTape(func, x₀)
                 ReverseDiff.compile(tape)
@@ -219,8 +218,10 @@ function compute_MichellDerivative(offsets, Uinf, xpos, zpos, ϱ, Nint, mode="RA
     elseif mode == "RAD"
         tRAD = @time begin
             
-            # Recording the tape once before and reusing speeds up by like 5x for a test problem
-            tape = get_or_make_tape(x -> solve_waveDrag(x, Uinf, xpos, zpos, ϱ, Nint), vec(offsets))
+            # Recording the tape once before and reusing speeds up by like 5x for a test problem.
+            # One tape per design point: the closure below captures Uinf, xpos, zpos, ϱ and Nint
+            tapeKey = (length(offsets), Uinf, ϱ, Nint, hash(xpos), hash(zpos))
+            tape = get_or_make_tape(x -> solve_waveDrag(x, Uinf, xpos, zpos, ϱ, Nint), vec(offsets), tapeKey)
 
             grad = similar(vec(offsets))
             ReverseDiff.gradient!(grad, tape, vec(offsets))
